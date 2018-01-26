@@ -11,6 +11,6 @@ def index(request):
 
 def about(request):
     html = "This tutorial has been put together by Stuart McMillan" + "  " + '<a href="/rango/">index</a>'
-    context_d = {"boldmessage": "Template using boldmessage"}
+    context_d = {"boldmessage": "This tutorial has been put together by Stuart McMillan"}
     return render(request, "rango/about.html", context=context_d)
     return HttpResponse(html)
