@@ -1,4 +1,3 @@
-# Chapter 3
 from django.test import TestCase
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.core.urlresolvers import reverse
@@ -15,148 +14,137 @@ import rango.test_utils as test_utils
 #Chapter 6
 from rango.decorators import chapter6
 
-# ===== Chapter 6
-class Chapter6ModelTests(TestCase):
-    def test_category_contains_slug_field(self):
-        #Create a new category
-        new_category = Category(name="Test Category")
-        new_category.save()
+#Chapter 7
+from rango.decorators import chapter7
+from rango.forms import CategoryForm, PageForm
 
-        #Check slug was generated
-        self.assertEquals(new_category.slug, "test-category")
-
-        #Check there is only one category
-        categories = Category.objects.all()
-        self.assertEquals(len(categories), 1)
-
-        #Check attributes were saved correctly
-        categories[0].slug = new_category.slug
-
-
-class Chapter6ViewTests(TestCase):
-    def test_index_context(self):
-        # Access index with empty database
-        response = self.client.get(reverse('index'))
-
-        # Context dictionary is then empty
-        self.assertCountEqual(response.context['categories'], [])
-        self.assertCountEqual(response.context['pages'], [])
-
-        categories = test_utils.create_categories()
-        test_utils.create_pages(categories)
-
-        #Access index with database filled
-        response = self.client.get(reverse('index'))
-
-        #Retrieve categories and pages from database
-        categories = Category.objects.order_by('-likes')[:5]
-        pages = Page.objects.order_by('-views')[:5]
-
-        # Check context dictionary filled
-        self.assertCountEqual(response.context['categories'], categories)
-        self.assertCountEqual(response.context['pages'], pages)
-
-    def test_index_displays_five_most_liked_categories(self):
-        #Create categories
-        test_utils.create_categories()
-
+# ===== Chapter 7
+class Chapter7ViewTests(TestCase):
+    @chapter7
+    def test_index_contains_link_to_add_category(self):
         # Access index
-        response = self.client.get(reverse('index'))
+        try:
+            response = self.client.get(reverse('index'))
+        except:
+            try:
+                response = self.client.get(reverse('rango:index'))
+            except:
+                return False
 
-        # Check if the 5 pages with most likes are displayed
-        for i in range(10, 5, -1):
-            self.assertIn("Category " + str(i), response.content.decode('ascii'))
+        # Check if there is text and a link to add category
+        self.assertIn('href="' + reverse('add_category') + '"', response.content.decode('ascii'))
 
-    def test_index_displays_no_categories_message(self):
-        # Access index with empty database
-        response = self.client.get(reverse('index'))
+    @chapter7
+    def test_add_category_form_is_displayed_correctly(self):
+        # Access add category page
+        response = self.client.get(reverse('add_category'))
 
-        # Check if no categories message is displayed
-        self.assertIn("There are no categories present.".lower(), response.content.decode('ascii').lower())
+        # Check form in response context is instance of CategoryForm
+        self.assertTrue(isinstance(response.context['form'], CategoryForm))
 
-    def test_index_displays_five_most_viewed_pages(self):
-        #Create categories
+        # Check form is displayed correctly
+        # Header
+        self.assertIn('<h1>Add a Category</h1>'.lower(), response.content.decode('ascii').lower())
+
+        # Label
+        self.assertIn('Please enter the category name.'.lower(), response.content.decode('ascii').lower())
+
+        # Text input
+        self.assertIn('id="id_name"', response.content.decode('ascii'))
+        self.assertIn('maxlength="128"', response.content.decode('ascii'))
+        self.assertIn('name="name"', response.content.decode('ascii'))
+        self.assertIn('type="text"', response.content.decode('ascii'))
+
+        # Button
+        self.assertIn('type="submit" name="submit" value="Create Category"'.lower(), response.content.decode('ascii').lower())
+
+    @chapter7
+    def test_add_page_form_is_displayed_correctly(self):
+        # Create categories
         categories = test_utils.create_categories()
 
-        #Create pages for categories
-        test_utils.create_pages(categories)
-
-        # Access index
-        response = self.client.get(reverse('index'))
-
-        # Check if the 5 pages with most views are displayed
-        for i in range(20, 15, -1):
-            self.assertIn("Page " + str(i), response.content.decode('ascii'))
-
-    def test_index_contains_link_to_categories(self):
-        #Create categories
-        categories = test_utils.create_categories()
-
-        # Access index
-        response = self.client.get(reverse('index'))
-
-        # Check if the 5 pages with most likes are displayed
-        for i in range(10, 5, -1):
-            category = categories[i - 1]
-            self.assertIn(reverse('show_category', args=[category.slug])[:-1], response.content.decode('ascii'))
-
-    def test_category_context(self):
-        #Create categories and pages for categories
-        categories = test_utils.create_categories()
-        pages = test_utils.create_pages(categories)
-
-        # For each category check the context dictionary passed via render() function
         for category in categories:
-            response = self.client.get(reverse('show_category', args=[category.slug]))
-            pages = Page.objects.filter(category=category)
-            self.assertCountEqual(response.context['pages'], pages)
-            self.assertEquals(response.context['category'], category)
+            # Access add category page
+            try:
+                response = self.client.get(reverse('index'))
+                response = self.client.get(reverse('add_page', args=[category.slug]))
+            except:
+                try:
+                    response = self.client.get(reverse('rango:index'))
+                    response = self.client.get(reverse('rango:add_page', args=[category.slug]))
+                except:
+                    return False
 
-    def test_category_page_using_template(self):
-        #Create categories in database
-        test_utils.create_categories()
+            # Check form in response context is instance of CategoryForm
+            self.assertTrue(isinstance(response.context['form'], PageForm))
 
-        # Access category page
-        response = self.client.get(reverse('show_category', args=['category-1']))
+            # Check form is displayed correctly
 
-        # check was used the right template
-        self.assertTemplateUsed(response, 'rango/category.html')
+            # Label 1
+            self.assertIn('Please enter the title of the page.'.lower(), response.content.decode('ascii').lower())
 
-    @chapter6
-    def test_category_page_displays_pages(self):
-        #Create categories in database
+            # Label 2
+            self.assertIn('Please enter the URL of the page.'.lower(), response.content.decode('ascii').lower())
+
+            # Text input 1
+            self.assertIn('id="id_title"'.lower(), response.content.decode('ascii').lower())
+            self.assertIn('maxlength="128"'.lower(), response.content.decode('ascii').lower())
+            self.assertIn('name="title"'.lower(), response.content.decode('ascii').lower())
+            self.assertIn('type="text"'.lower(), response.content.decode('ascii').lower())
+
+            # Text input 2
+            self.assertIn('id="id_url"'.lower(), response.content.decode('ascii').lower())
+            self.assertIn('maxlength="200"'.lower(), response.content.decode('ascii').lower())
+            self.assertIn('name="url"'.lower(), response.content.decode('ascii').lower())
+            self.assertIn('type="url"'.lower(), response.content.decode('ascii').lower())
+
+            # Button
+            self.assertIn('type="submit" name="submit" value="Add Page"'.lower(), response.content.decode('ascii').lower())
+
+    def test_access_category_that_does_not_exists(self):
+        # Access a category that does not exist
+        response = self.client.get(reverse('show_category', args=['python']))
+
+        # Check that it has a response as status code OK is 200
+        self.assertEquals(response.status_code, 200)
+
+        # Check the rendered page is not empty, thus it was customised (I suppose)
+        self.assertNotEquals(response.content.decode('ascii'), '')
+
+    def test_link_to_add_page_only_appears_in_valid_categories(self):
+        # Access a category that does not exist
+        response = self.client.get(reverse('show_category', args=['python']))
+
+        # Check that there is not a link to add page
+        try:
+            self.assertNotIn(reverse('add_page', args=['python']), response.content.decode('ascii'))
+            # Access a category that does not exist
+            response = self.client.get(reverse('show_category', args=['other-frameworks']))
+            # Check that there is not a link to add page
+            self.assertNotIn(reverse('add_page', args=['other-frameworks']), response.content.decode('ascii'))
+        except:
+            try:
+                self.assertNotIn(reverse('rango:add_page', args=['python']), response.content.decode('ascii'))
+                # Access a category that does not exist
+                response = self.client.get(reverse('rango:show_category', args=['other-frameworks']))
+                # Check that there is not a link to add page
+                self.assertNotIn(reverse('rango:add_page', args=['other-frameworks']), response.content.decode('ascii'))
+            except:
+                return False
+
+    @chapter7
+    def test_category_contains_link_to_add_page(self):
+        # Crete categories
         categories = test_utils.create_categories()
 
-        # Create pages for categories
-        test_utils.create_pages(categories)
-
-        # For each category, access its page and check for the pages associated with it
+        # For each category in the database check if contains link to add page
         for category in categories:
-            # Access category page
-            response = self.client.get(reverse('show_category', args=[category.slug]))
-
-            # Retrieve pages for that category
-            pages = Page.objects.filter(category=category)
-
-            # Check pages are displayed and they have a link
-            for page in pages:
-                self.assertIn(page.title, response.content.decode('ascii'))
-                self.assertIn(page.url, response.content.decode('ascii'))
-
-    def test_category_page_displays_empty_message(self):
-        #Create categories in database
-        categories = test_utils.create_categories()
-
-        # For each category, access its page and check there are no pages associated with it
-        for category in categories:
-            # Access category page
-            response = self.client.get(reverse('show_category', args=[category.slug]))
-            self.assertIn("No pages currently in category.".lower(), response.content.decode('ascii').lower())
-
-    def test_category_page_displays_category_does_not_exist_message(self):
-        # Try to access categories not saved to database and check the message
-        response = self.client.get(reverse('show_category', args=['Python']))
-        self.assertIn("does not exist!".lower(), response.content.decode('ascii').lower())
-
-        response = self.client.get(reverse('show_category', args=['Django']))
-        self.assertIn("does not exist!".lower(), response.content.decode('ascii').lower())
+            try:
+                response = self.client.get(reverse('show_category', args=[category.slug]))
+                self.assertIn(reverse('add_page', args=[category.slug]), response.content.decode('ascii'))
+            except:
+                try:
+                    response = self.client.get(reverse('rango:show_category', args=[category.slug]))
+                    self.assertIn(reverse('rango:add_page', args=[category.slug]), response.content.decode('ascii'))
+                except:
+                    return False
