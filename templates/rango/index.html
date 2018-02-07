@@ -7,7 +7,12 @@
 
 	{% block body_block %}
 	<h2>Rango says...</h2>
-	<div>hey there partner!</div>
+	{% if user.is_authenticated %} 
+		howdy {{ user.username }}!
+	{% else %} 
+		hey there partner!
+	{% endif %}
+
 
 	<h1>Most Liked Categories</h1>	
 	<div>

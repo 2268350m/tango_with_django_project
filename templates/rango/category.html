@@ -21,6 +21,12 @@
 		The specified category does not exist!
 		{% endif %}
 		<div>
-		<a href="/rango/category/{{category.slug}}/add_page/">Add Page</a> 
+		<ul>
+		{% if user.is_authenticated %}
+			<li><a href="/rango/category/{{category.slug}}/add_page/">Add Page</a></li> 
+		{% else %}
+			<li><a href="{% url 'login' %}">Sign In</a></li>
+			<li><a href="{% url 'register' %}">Sign Up</a></li> 
+		{% endif %}
 		<div/ >
-		{% endblock %}
+	{% endblock %}
