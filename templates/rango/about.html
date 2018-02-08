@@ -2,7 +2,7 @@
 {% load staticfiles %}
 
 	{% block body_block %}
-	<h1>Rango says...</h1>
+	<h1>Rango says here is the about page</h1>
 	<div>
 	<br />
 	<strong>{{ boldmessage }}</strong><br />
@@ -10,5 +10,7 @@
 	<div>
 	<img src="{{ MEDIA_URL }}cat.jpg" alt="Picture of Cat" />
 	<img src="{% static "images/cat.jpg" %}" alt="Picture of Cat" />
+	<p> visits: {{ visits }}</p> 
+	<li><a href="{% url 'index' %}">Index</a></li>
 	</div>
 	{% endblock %}
