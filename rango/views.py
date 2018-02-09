@@ -11,6 +11,7 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from datetime import datetime
+from django.contrib.auth.models import User 
 
 
 
@@ -158,8 +159,25 @@ def user_login(request):
                 return HttpResponse("Your Rango account is disabled.")
         else:
 # Bad login details were provided. So we can't log the user in.
+            #context_dict = {}
+            
+            #if user == '' or not user:
+             #   context_dict['error'] = "Wronguser"
+            #else:
+             #   context_dict[error] = "Invalid Password"
+            
             print("Invalid login details: {0}, {1}".format(username, password))
-            return HttpResponse("Invalid login details supplied.")
+            context_dict = {}
+            usr = User.objects.filter(username=username)
+            if user == '' or not usr:
+                context_dict['error'] = "Wronguser"
+            else:
+                if password == '':
+                    context_dict['error'] = "Please enter the correct password"
+                else:
+                    context_dict['error'] = "Wrong Password"
+            
+            return render(request, 'rango/login.html', context_dict)
 # The request is not a HTTP POST, so display the login form.
 # This scenario would most likely be a HTTP GET.
     else:
